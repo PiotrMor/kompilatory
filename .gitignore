@@ -76,3 +76,8 @@ fabric.properties
 
 gen
 
+.vscode
+
+src/.vscode
+target
+

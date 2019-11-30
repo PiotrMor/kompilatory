@@ -2,6 +2,7 @@ package pl.edu.agh.kompilatory;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import pl.edu.agh.kompilatory.CppParser.CppVisitor;
@@ -17,8 +18,9 @@ import java.io.PrintStream;
 public class App {
 
     public static void main(String[] args) {
+        String filename = "src/main/java/pl/edu/agh/kompilatory/input.cpp";
         try {
-            ANTLRInputStream inputStream = new ANTLRInputStream(new FileInputStream("src/main/java/pl/edu/agh/kompilatory/input.cpp"));
+            CharStream inputStream = CharStreams.fromFileName(filename);
             CPPLexer cppLexer = new CPPLexer(inputStream);
             CommonTokenStream commonTokenStream = new CommonTokenStream(cppLexer);
             CPPParser cppParser = new CPPParser(commonTokenStream);

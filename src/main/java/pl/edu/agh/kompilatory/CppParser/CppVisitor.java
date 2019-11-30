@@ -13,6 +13,7 @@ public class CppVisitor extends CPPBaseVisitor {
     private int indent = 0;
     private boolean indentNeeded = true;
     private boolean skipNextString = false;
+    private boolean skipIf = false;
 
     public CppVisitor(PrintStream stream) {
         this.stream = stream;
@@ -46,9 +47,9 @@ public class CppVisitor extends CPPBaseVisitor {
 
     @Override
     public Object visitBooleanliteral(CPPParser.BooleanliteralContext ctx) {
-        if (ctx.getText().equals(ctx.False().getText())) {
+        if (ctx.False() != null) {
             print("False");
-        } else {
+        } else if (ctx.True() != null) {
             print("True");
         }
         return super.visitBooleanliteral(ctx);
@@ -57,7 +58,9 @@ public class CppVisitor extends CPPBaseVisitor {
     @Override
     public Object visitSimpledeclaration(CPPParser.SimpledeclarationContext ctx) {
         super.visitSimpledeclaration(ctx);
-        println();
+        if (ctx.Semi() != null) {
+            println();
+        }
         return null;
     }
 
@@ -81,46 +84,71 @@ public class CppVisitor extends CPPBaseVisitor {
     @Override
     public Object visitFunctiondefinition(CPPParser.FunctiondefinitionContext ctx) {
         printWithIndent("def ");
+        indentNeeded = false;
         return super.visitFunctiondefinition(ctx);
     }
 
     @Override
     public Object visitParametersandqualifiers(CPPParser.ParametersandqualifiersContext ctx) {
         print("(");
+        indentNeeded = false;
         super.visitParametersandqualifiers(ctx);
         print(("):"));
+        indentNeeded = true;
         return null;
     }
 
     @Override
     public Object visitCompoundstatement(CPPParser.CompoundstatementContext ctx) {
         indent += 1;
-        println();
+        if (ctx.LeftBrace() != null) {
+            println();
+        }
         super.visitCompoundstatement(ctx);
-        println();
+        if (ctx.RightBrace() != null) {
+            println();
+        }
         indent -= 1;
         return null;
     }
 
     @Override
     public Object visitSelectionstatement(CPPParser.SelectionstatementContext ctx) {
-        if (ctx.If() != null) {
+        int statementIndex = 0;
+        if (ctx.If() != null && !skipIf) {
             printWithIndent("if ");
             indentNeeded = false;
         }
+        skipIf = false;
 
         visitChildren(ctx.condition());
         if (ctx.RightParen() != null) {
             print(":");
             indentNeeded = true;
         }
-        visitChildren(ctx.statement(0));
+        visitChildren(ctx.statement(statementIndex++));
+        if (ctx.Else() != null) {
+            if (ctx.statement(statementIndex).selectionstatement() != null) {
+                printWithIndent("elif ");
+                skipIf = true;
+                indentNeeded = false;
+            } else {
+                printWithIndent("else:");
+            }
+            visitChildren(ctx.statement(statementIndex));
+        }
         return null;
     }
 
     @Override
     public Object visitAssignmentoperator(CPPParser.AssignmentoperatorContext ctx) {
-        print(" = ");
+        if (ctx.Assign() != null) {
+            print(" = ");
+        } else if (ctx.PlusAssign() != null) {
+            print(" += ");
+        } else if (ctx.MinusAssign() != null) {
+            print(" -= ");
+        }
         super.visitAssignmentoperator(ctx);
         return null;
     }
@@ -150,7 +178,7 @@ public class CppVisitor extends CPPBaseVisitor {
 
         if (ctx.PlusPlus() != null) {
             visitChildren(ctx.postfixexpression());
-            println(" += 1");
+            print(" += 1");
         } else if (ctx.LeftParen() != null) {
             visitChildren(ctx.postfixexpression());
             if (ctx.expressionlist() != null) {
@@ -170,11 +198,19 @@ public class CppVisitor extends CPPBaseVisitor {
         if (ctx.While() != null) {
             printWithIndent("while ");
         } else if (ctx.For() != null) {
-            printWithIndent("for");
+            printWithIndent("for ");
         }
         indentNeeded = false;
-        visitChildren(ctx.condition());
+        safeVisitChildren(ctx.forrangedeclaration());
+        safeVisitChildren(ctx.condition());
+        if (ctx.forrangedeclaration() != null) {
+            print(" in ");
+            indentNeeded = false;
+            safeVisitChildren(ctx.forrangeinitializer());
+        }
         print(":");
+
+
         indentNeeded = true;
 
         return visitChildren(ctx.statement());
@@ -186,6 +222,7 @@ public class CppVisitor extends CPPBaseVisitor {
             safeVisitChildren(ctx.equalityexpression());
             if (ctx.Equal() != null) {
                 print(" == ");
+                indentNeeded = false;
             } else if (ctx.NotEqual() != null) {
                 print(" != ");
             }
@@ -205,7 +242,6 @@ public class CppVisitor extends CPPBaseVisitor {
         }
         super.visitJumpstatement(ctx);
         indentNeeded = true;
-        println();
         return null;
     }
 
@@ -246,8 +282,10 @@ public class CppVisitor extends CPPBaseVisitor {
                 print(" * ");
             } else if (ctx.Mod() != null) {
                 print(" % ");
+                indentNeeded = false;
             } else {
                 print(" / ");
+                indentNeeded = false;
             }
             safeVisitChildren(ctx.pmexpression());
         } else {
@@ -298,6 +336,44 @@ public class CppVisitor extends CPPBaseVisitor {
         return null;
     }
 
+    @Override
+    public Object visitExpressionstatement(CPPParser.ExpressionstatementContext ctx) {
+        super.visitExpressionstatement(ctx);
+        if (ctx.getText().contains(";")) {
+            println();
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitClasskey(CPPParser.ClasskeyContext ctx) {
+        print("class ");
+        return super.visitClasskey(ctx);
+    }
+
+    @Override
+    public Object visitClassname(CPPParser.ClassnameContext ctx) {
+        if (!ctx.getText().equals("string")) {
+            print(ctx.getText());
+        }
+        return super.visitClassname(ctx);
+    }
+
+    @Override
+    public Object visitClassspecifier(CPPParser.ClassspecifierContext ctx) {
+        safeVisitChildren(ctx.classhead());
+
+        println(":");
+        indent++;
+        safeVisitChildren(ctx.memberspecification());
+        indent--;
+        return null;
+    }
+
+
+
+
+
     private String getIndent() {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < indent; i++) {
@@ -339,4 +415,6 @@ public class CppVisitor extends CPPBaseVisitor {
             visitChildren(context);
         }
     }
+
+
 }

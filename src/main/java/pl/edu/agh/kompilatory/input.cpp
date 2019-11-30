@@ -2,42 +2,79 @@
 #include <vector>
 
 using namespace std;
+class Hello {
+    int main(int s){
+        for (int i = 0; i < 10; i++) {
+            i++;
+        }
 
-int main(int s){
-    int test = 1;
-    bool flag = false;
-    string str = "asdasd";
-    int tablica[] = {1,2,3,4};
 
-    if(flag && test){
-        test = 2;
+        int test = 1;
+        bool flag = false;
+        string str = "asdasd";
+        int tablica[] = {1,2,3,4};
+
+        if(flag && test){
+            test = 2;
+        } else if (test == true) {
+            test = 3;
+        } else {
+            test = 4;
+        }
+
+        if(1 > 0 || test == 2) {
+            test = 3 - 2;
+        }
+
+        while(test) {
+            while(test > 0) {
+                test--;
+            }
+            test++;
+            test++;
+        }
+
+        while(flag == false) {
+            flag = !flag;
+        }
+
+        int b = 2 + 3;
+
+        if (b == 3) {
+            b++;
+            return b * 2;
+        }
+
+
+        int result = 1 + 7;
+        z = 2 * 8;
+        a = 6 - 1;
+        x = 5 % a;
+        x++;
+
+        bool expresion = 1 && 1;
+
+        bool expression2 = 0 || false;
+        return 12 % b;
     }
+};
 
-    if(1 > 0 || test == 2) {
-        test = 3 - 2;
-    }
-
-    while(test) {
-        test++;
-        test++;
-    }
-
-    while(flag == false) {
-        flag = !flag;
-    }
-
-    int b = 2 + 3;
-
-    if (b == 3) {
-        return b * 2;
-    }
-    return 12 % b;
-}
 
 void test(void){
     main(10 / 2);
 }
 
 bool boolFun(int i, int j){
-    return i + j;
+    for (int x : arr) {
+        x += 1;
+        }
+    return i == j;
+}
+
+int greater(int i, int j) {
+    if (i >= j) {
+        return i;
+    } else {
+        return j;
+    }
 }
